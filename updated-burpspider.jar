@@ -1,0 +1,68 @@
+package burp;
+
+import java.net.URL;
+import java.util.HashSet;
+import java.util.Set;
+
+public class Spider implements IScannerCheck {
+    
+    private IBurpExtenderCallbacks callbacks;
+    
+    public Spider(IBurpExtenderCallbacks callbacks) {
+        this.callbacks = callbacks;
+    }
+    
+    @Override
+    public List<IScanIssue> doActiveScan(IHttpRequestResponse baseRequestResponse, IScannerInsertionPoint insertionPoint) {
+        return null;
+    }
+    
+    @Override
+    public List<IScanIssue> doPassiveScan(IHttpRequestResponse baseRequestResponse) {
+        return null;
+    }
+    
+    @Override
+    public int consolidateDuplicateIssues(IScanIssue existingIssue, IScanIssue newIssue) {
+        return 0;
+    }
+    
+    @Override
+    public List<IScanIssue> doActiveScan(IHttpRequestResponse baseRequestResponse, IScannerInsertionPoint insertionPoint, byte[] payload) {
+        return null;
+    }
+    
+    @Override
+    public void doPassiveScan(IHttpRequestResponse baseRequestResponse) {
+        URL url = callbacks.getHelpers().analyzeRequest(baseRequestResponse).getUrl();
+        
+        // Ignore non-HTTP(S) URLs
+        if (!url.getProtocol().startsWith("http")) {
+            return;
+        }
+        
+        // Ignore URLs that have already been visited
+        if (visitedUrls.contains(url.toString())) {
+            return;
+        }
+        
+        // Add the URL to the set of visited URLs
+        visitedUrls.add(url.toString());
+        
+        // Send a spider request for the URL
+        callbacks.sendToSpider(url);
+    }
+    
+    @Override
+    public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
+        this.callbacks = callbacks;
+        
+        // Set the extension name
+        callbacks.setExtensionName("Spider");
+        
+        // Register the extension as a passive scanner
+        callbacks.registerScannerCheck(this);
+    }
+    
+    private Set<String> visitedUrls = new HashSet<>();
+}
