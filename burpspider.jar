@@ -1,0 +1,95 @@
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import burp.IBurpExtender;
+import burp.IBurpExtenderCallbacks;
+import burp.IScannerCheck;
+import burp.IHttpRequestResponse;
+import burp.IRequestInfo;
+import burp.IScanIssue;
+
+public class BurpSpider implements IBurpExtender, IScannerCheck {
+
+    private IBurpExtenderCallbacks callbacks;
+    private static final List<URL> urls = new ArrayList<>();
+    private static final String name = "Burp Spider";
+
+    @Override
+    public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks) {
+        this.callbacks = callbacks;
+        callbacks.setExtensionName(name);
+        callbacks.registerScannerCheck(this);
+    }
+
+    @Override
+    public List<IScanIssue> doActiveScan(IHttpRequestResponse baseRequestResponse, IScannerInsertionPoint insertionPoint) {
+        IRequestInfo reqInfo = callbacks.getHelpers().analyzeRequest(baseRequestResponse);
+        URL url = reqInfo.getUrl();
+        
+        if (!urls.contains(url)) {
+            urls.add(url);
+            callbacks.sendToSpider(url);
+        }
+        
+        return null;
+    }
+
+    @Override
+    public int consolidateDuplicateIssues(IScanIssue existingIssue, IScanIssue newIssue) {
+        if (existingIssue.getIssueDetail().equals(newIssue.getIssueDetail())) {
+            return -1;
+        }
+        return 0;
+    }
+
+    @Override
+    public List<IScanIssue> doPassiveScan(IHttpRequestResponse baseRequestResponse) {
+        return null;
+    }
+
+    @Override
+    public void doActiveScan(IHttpRequestResponse baseRequestResponse, IScannerInsertionPoint insertionPoint, IScannerCallback callback) {
+        // Not used in this plugin
+    }
+
+    @Override
+    public void doPassiveScan(IHttpRequestResponse baseRequestResponse, IScannerInsertionPoint insertionPoint) {
+        // Not used in this plugin
+    }
+
+    @Override
+    public int getIssueType() {
+        return 0;
+    }
+
+    @Override
+    public String getIssueName() {
+        return name;
+    }
+
+    @Override
+    public String getIssueBackground() {
+        return "This issue is generated when Burp Spider discovers a new URL while crawling a website.";
+    }
+
+    @Override
+    public String getIssueDetail() {
+        return "Burp Spider discovered a new URL: " + urls.get(urls.size() - 1).toString();
+    }
+
+    @Override
+    public String getIssueSeverity() {
+        return "Information";
+    }
+
+    @Override
+    public String getConfidence() {
+        return "Certain";
+    }
+
+    @Override
+    public URL getURL() {
+        return null;
+    }
+
+}
